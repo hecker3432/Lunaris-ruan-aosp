@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+    <!-- Xiaomi SM7435 Kernel Trees (Snapdragon 7s Gen 2) -->
+    <project name="LineageOS/android_kernel_xiaomi_sm7435" path="kernel/xiaomi/sm7435" remote="github" revision="lineage-22.1" />
+    <project name="LineageOS/android_kernel_xiaomi_sm7435-devicetrees" path="kernel/xiaomi/sm7435-devicetrees" remote="github" revision="lineage-22.1" />
+    <project name="LineageOS/android_kernel_xiaomi_sm7435-modules" path="kernel/xiaomi/sm7435-modules" remote="github" revision="lineage-22.1" />
+
+    <!-- Xiaomi Hardware HAL -->
+    <project name="LineageOS/android_hardware_xiaomi" path="hardware/xiaomi" remote="github" revision="lineage-22.1" />
+</manifest>

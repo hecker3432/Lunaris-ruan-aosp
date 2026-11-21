@@ -1,0 +1,93 @@
+name: Build Lunaris AOSP for Redmi Pad Pro 5G (ruan)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_variant:
+        description: 'Build Variant (userdebug or user)'
+        required: true
+        default: 'userdebug'
+        type: choice
+        options:
+          - userdebug
+          - user
+
+jobs:
+  build:
+    name: Build Lunaris AOSP (ruan)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          path: device_tree
+
+      - name: Maximize disk space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 10240
+          swap-size-mb: 16384
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
+      - name: Set up build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-core gnupg flex bison build-essential zip curl zlib1g-dev \
+            libc6-dev-i386 libncurses5 x11proto-core-dev libx11-dev lib32z1-dev libgl1-mesa-dev \
+            libxml2 libxml2-utils xsltproc unzip fontconfig libssl-dev bc ccache rsync python3 git-lfs
+
+          # Install Google Repo tool
+          mkdir -p ~/.bin
+          curl https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
+          chmod a+x ~/.bin/repo
+          echo "$HOME/.bin" >> $GITHUB_PATH
+
+          # Configure Git
+          git config --global user.name "hecker3432"
+          git config --global user.email "hecker3432@users.noreply.github.com"
+
+      - name: Initialize Lunaris AOSP Source Tree
+        run: |
+          mkdir -p ~/lunaris && cd ~/lunaris
+          repo init -u https://github.com/Lunaris-AOSP/android -b 16.2 --git-lfs --depth=1
+
+          # Place local manifest for ruan hardware
+          mkdir -p .repo/local_manifests
+          cp $GITHUB_WORKSPACE/device_tree/ruan_manifest.xml .repo/local_manifests/ruan.xml
+
+      - name: Sync Source Tree
+        run: |
+          cd ~/lunaris
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch --prune
+
+      - name: Inject ruan Device Tree
+        run: |
+          cd ~/lunaris
+          mkdir -p device/xiaomi
+          cp -r $GITHUB_WORKSPACE/device_tree/device/xiaomi/ruan device/xiaomi/ruan
+
+      - name: Compile Lunaris AOSP
+        run: |
+          cd ~/lunaris
+          source build/envsetup.sh
+          lunch lineage_ruan-bp4a-${{ github.event.inputs.build_variant }} || lunch lunaris_ruan-bp4a-${{ github.event.inputs.build_variant }}
+          m bacon -j$(nproc --all)
+
+      - name: Upload Recovery & ROM Release
+        uses: softprops/action-gh-release@v1
+        if: success()
+        with:
+          tag_name: ruan-lunaris-${{ github.run_id }}
+          name: Lunaris AOSP for Redmi Pad Pro 5G (ruan)
+          files: |
+            ~/lunaris/out/target/product/ruan/*ruan*.zip
+            ~/lunaris/out/target/product/ruan/recovery.img
+            ~/lunaris/out/target/product/ruan/boot.img
+            ~/lunaris/out/target/product/ruan/dtbo.img
+            ~/lunaris/out/target/product/ruan/vendor_boot.img
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
