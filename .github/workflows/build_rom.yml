@@ -17,11 +17,6 @@ jobs:
     name: Build Lunaris AOSP (ruan)
     runs-on: ubuntu-22.04
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          path: device_tree
-
       - name: Maximize disk space
         uses: easimon/maximize-build-space@master
         with:
@@ -32,6 +27,15 @@ jobs:
           remove-haskell: 'true'
           remove-codeql: 'true'
           remove-docker-images: 'true'
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Verify workspace files
+        run: |
+          echo "Workspace: $GITHUB_WORKSPACE"
+          ls -la "$GITHUB_WORKSPACE"
+          test -f "$GITHUB_WORKSPACE/ruan_manifest.xml" || (echo "ruan_manifest.xml missing" && exit 1)
 
       - name: Set up build environment
         run: |
@@ -57,7 +61,7 @@ jobs:
 
           # Place local manifest for ruan hardware
           mkdir -p .repo/local_manifests
-          cp $GITHUB_WORKSPACE/device_tree/ruan_manifest.xml .repo/local_manifests/ruan.xml
+          cp "$GITHUB_WORKSPACE/ruan_manifest.xml" .repo/local_manifests/ruan.xml
 
       - name: Sync Source Tree
         run: |
@@ -68,7 +72,7 @@ jobs:
         run: |
           cd ~/lunaris
           mkdir -p device/xiaomi
-          cp -r $GITHUB_WORKSPACE/device_tree/device/xiaomi/ruan device/xiaomi/ruan
+          cp -r "$GITHUB_WORKSPACE/device/xiaomi/ruan" device/xiaomi/ruan
 
       - name: Compile Lunaris AOSP
         run: |
