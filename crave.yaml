@@ -1,0 +1,27 @@
+# Crave.io Build Configuration for Lunaris AOSP (ruan)
+type: foss
+sync:
+  # Initialize Lunaris AOSP 16.2
+  - repo init -u https://github.com/Lunaris-AOSP/android -b 16.2 --git-lfs --depth=1
+  # Add ruan local manifest
+  - mkdir -p .repo/local_manifests
+  - curl -o .repo/local_manifests/ruan.xml https://raw.githubusercontent.com/hecker3432/Lunaris-ruan-aosp/main/ruan_manifest.xml
+  # Fast sync
+  - repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags --optimized-fetch --prune
+
+build:
+  # Clone your device tree into device/xiaomi/ruan
+  - mkdir -p device/xiaomi
+  - rm -rf device/xiaomi/ruan
+  - git clone https://github.com/hecker3432/Lunaris-ruan-aosp.git device/xiaomi/ruan
+  # Set up build environment and compile
+  - source build/envsetup.sh
+  - lunch lineage_ruan-bp4a-userdebug || lunch lunaris_ruan-bp4a-userdebug
+  - m bacon -j$(nproc --all)
+
+artifacts:
+  - out/target/product/ruan/*ruan*.zip
+  - out/target/product/ruan/recovery.img
+  - out/target/product/ruan/boot.img
+  - out/target/product/ruan/dtbo.img
+  - out/target/product/ruan/vendor_boot.img
